@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Agents - Agent Management System{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Manage Agents</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Tools</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for agent in agents %}
+        <tr>
+            <td>{{ agent.Agent.name }}</td>
+            <td>{{ agent.Agent.role }}</td>
+            <td>{{ agent.Agent.tools|default([], true)|join(', ') }}</td>
+            <td>
+                <button class="btn btn-sm btn-primary edit-agent" data-index="{{ loop.index0 }}" data-agent='{{ agent.Agent|tojson|safe }}'>Edit</button>
+                <form action="{{ url_for('manage_agents') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="index" value="{{ loop.index0 }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2 class="mt-4">Add/Edit Agent</h2>
+<form action="{{ url_for('manage_agents') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="add" id="form-action">
+    <input type="hidden" name="index" value="" id="form-index">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name:</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Role:</label>
+                <input type="text" class="form-control" id="role" name="role" required>
+            </div>
+            <div class="mb-3">
+                <label for="goal" class="form-label">Goal:</label>
+                <textarea class="form-control" id="goal" name="goal" rows="3" required></textarea>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="backstory" class="form-label">Backstory:</label>
+                <textarea class="form-control" id="backstory" name="backstory" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="delegate" class="form-label">Delegate:</label>
+                <select class="form-select" id="delegate" name="delegate" required>
+                    <option value="True">True</option>
+                    <option value="False">False</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="tools" class="form-label">Tools (optional):</label>
+                <select class="form-select" id="tools" name="tools" multiple>
+                    {% for tool_name in tools %}
+                    <option value="{{ tool_name }}">{{ tool_name }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple tools</small>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<script>
+    var agentsJson = {{ agents_json|safe }};
+    document.querySelectorAll('.edit-agent').forEach(button => {
+        button.addEventListener('click', function() {
+            const agentData = JSON.parse(this.dataset.agent);
+            document.getElementById('form-action').value = 'edit';
+            document.getElementById('form-index').value = this.dataset.index;
+            document.getElementById('name').value = agentData.name;
+            document.getElementById('role').value = agentData.role;
+            document.getElementById('goal').value = agentData.goal;
+            document.getElementById('backstory').value = agentData.backstory;
+            
+            // Update delegate dropdown
+            const delegateSelect = document.getElementById('delegate');
+            if (typeof agentData.delegate === 'boolean') {
+                delegateSelect.value = agentData.delegate ? 'True' : 'False';
+            }
+            
+            const toolsSelect = document.getElementById('tools');
+            Array.from(toolsSelect.options).forEach(option => {
+                option.selected = agentData.tools && agentData.tools.includes(option.value);
+            });
+        });
+    });
+</script>
+{% endblock %}

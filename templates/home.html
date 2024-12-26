@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Agent Management System{% endblock %}
+
+{% block content %}
+<script>
+    function formatJSON(jsonString) {
+        try {
+            const obj = JSON.parse(jsonString);
+            return JSON.stringify(obj, null, 2);
+        } catch (e) {
+            console.error('Error parsing JSON:', e);
+            return jsonString;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const executeCrewForm = document.getElementById('execute-crew-form');
+        const selfEvalCrewForm = document.getElementById('self-eval-crew-form');
+        const executionResults = document.getElementById('execution-results');
+        const errorMessage = document.getElementById('error-message');
+        const downloadJsonButton = document.getElementById('download-json');
+        const downloadExcelButton = document.getElementById('download-excel');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Regular Crew execution handler
+        if (executeCrewForm) {
+            executeCrewForm.addEventListener('submit', function(e) {
+                console.log('Form submitted');
+                e.preventDefault();
+                const selectedCrew = document.getElementById('crew-select').value;
+                
+                if (selectedCrew) {
+                    console.log('Selected crew:', selectedCrew);
+                    
+                    errorMessage.style.display = 'none';
+                    executionResults.value = 'Executing crew...';
+                    downloadJsonButton.disabled = true;
+                    downloadExcelButton.disabled = true;
+                    
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Executing...';
+                    
+                    const formData = new FormData();
+                    formData.append('crew_name', selectedCrew);
+                    
+                    fetch('/execute_crew', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        console.log('Response received:', response);
+                        if (!response.ok) {
+                            return response.json().then(errorData => {
+                                throw new Error(errorData.error || 'Execution failed');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Data received:', data);
+                        if (data.error) {
+                            errorMessage.textContent = data.error;
+                            errorMessage.style.display = 'block';
+                            executionResults.value = '';
+                            downloadJsonButton.disabled = true;
+                            downloadExcelButton.disabled = true;
+                        } else {
+                            errorMessage.style.display = 'none';
+                            let formattedResult = '';
+                            if (data.result !== undefined) {
+                                if (typeof data.result === 'object' && data.result !== null) {
+                                    formattedResult = JSON.stringify(data.result, null, 2);
+                                } else {
+                                    formattedResult = JSON.stringify({ "result": data.result }, null, 2);
+                                }
+                            } else {
+                                formattedResult = JSON.stringify(data, null, 2);
+                            }
+                            // Store both raw and formatted results
+                            const rawResult = formattedResult;
+                            const formattedOutput = data.formatted_result || formattedResult;
+                            
+                            // Display formatted result by default
+                            executionResults.value = formattedOutput;
+                            
+                            // Find or create the button container
+                            const buttonContainer = document.querySelector('.mt-3');
+                            if (!buttonContainer) return;  // Exit if container not found
+                            
+                            // Setup toggle button
+                            const setupToggleButton = () => {
+                                // Remove existing toggle button if present
+                                const existingButton = document.getElementById('toggle-format');
+                                if (existingButton) {
+                                    existingButton.remove();
+                                }
+                                
+                                // Create new toggle button
+                                const toggleButton = document.createElement('button');
+                                toggleButton.id = 'toggle-format';
+                                toggleButton.className = 'btn btn-secondary me-2';
+                                toggleButton.textContent = 'Show Raw JSON';
+                                
+                                // Add click handler with closure to maintain state
+                                let isShowingFormatted = true;
+                                toggleButton.onclick = () => {
+                                    executionResults.value = isShowingFormatted ? rawResult : formattedOutput;
+                                    toggleButton.textContent = isShowingFormatted ? 'Show Formatted' : 'Show Raw JSON';
+                                    isShowingFormatted = !isShowingFormatted;
+                                };
+                                
+                                // Insert button at the start of container
+                                buttonContainer.insertBefore(toggleButton, buttonContainer.firstChild);
+                            };
+                            
+                            // Initialize toggle button
+                            setupToggleButton();
+                            
+                            downloadJsonButton.disabled = false;
+                            downloadExcelButton.disabled = false;
+                            if (data.filename) {
+                                downloadJsonButton.onclick = () => window.location.href = `/download_json/${data.filename}`;
+                                downloadExcelButton.onclick = () => window.location.href = `/download_excel/${data.filename}`;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error executing crew:', error);
+                        errorMessage.textContent = error.message || 'An error occurred during execution';
+                        errorMessage.style.display = 'block';
+                        executionResults.value = '';
+                        downloadJsonButton.disabled = true;
+                        downloadExcelButton.disabled = true;
+                    })
+                    .finally(() => {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = 'Execute Crew';
+                    });
+                }
+            });
+        }
+
+        // Self-evaluating Crew execution handler
+        if (selfEvalCrewForm) {
+            selfEvalCrewForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const prompt = document.getElementById('prompt-input').value;
+                const selectedCrew = document.getElementById('research-crew-select').value;
+                
+                if (prompt) {
+                    errorMessage.style.display = 'none';
+                    executionResults.value = 'Executing self-evaluating crew...';
+                    downloadJsonButton.disabled = true;
+                    downloadExcelButton.disabled = true;
+                    
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Executing...';
+                    
+                    const formData = new FormData();
+                    formData.append('prompt', prompt);
+                    formData.append('crew_name', selectedCrew);
+                    
+                    fetch('/execute_self_eval_crew', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errorData => {
+                                throw new Error(errorData.error || 'Execution failed');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            errorMessage.textContent = data.error;
+                            errorMessage.style.display = 'block';
+                            executionResults.value = '';
+                            downloadJsonButton.disabled = true;
+                            downloadExcelButton.disabled = true;
+                        } else {
+                            errorMessage.style.display = 'none';
+                            executionResults.value = JSON.stringify(data.result, null, 2);
+                            downloadJsonButton.disabled = false;
+                            downloadExcelButton.disabled = false;
+                            if (data.filename) {
+                                downloadJsonButton.onclick = () => window.location.href = `/download_json/${data.filename}`;
+                                downloadExcelButton.onclick = () => window.location.href = `/download_excel/${data.filename}`;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error executing self-evaluating crew:', error);
+                        errorMessage.textContent = error.message || 'An error occurred during execution';
+                        errorMessage.style.display = 'block';
+                        executionResults.value = '';
+                        downloadJsonButton.disabled = true;
+                        downloadExcelButton.disabled = true;
+                    })
+                    .finally(() => {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = 'Execute Self-evaluating Crew';
+                    });
+                }
+            });
+        }
+    });
+</script>
+
+<h1 class="mb-4">Welcome to the Agent Management System</h1>
+
+<div class="row">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <div class="col-md-6">
+        <h2>Execute Crew</h2>
+        <form id="execute-crew-form" method="POST" action="/execute_crew">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label for="crew-select" class="form-label">Select a Crew:</label>
+                <select id="crew-select" class="form-select" required>
+                    <option value="">Choose a crew...</option>
+                    {% for crew in crews %}
+                    <option value="{{ crew.Crew.name }}">{{ crew.Crew.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Execute Crew</button>
+        </form>
+    </div>
+    <div class="col-md-6">
+        <h2>Self-evaluating Crew</h2>
+        <form id="self-eval-crew-form">
+            <div class="mb-3">
+                <label for="research-crew-select" class="form-label">Select Research Crew:</label>
+                <select id="research-crew-select" class="form-select" required>
+                    <option value="">Choose a research configuration...</option>
+                    {% for config in smart_research_configs %}
+                    <option value="{{ config.name }}">{{ config.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="prompt-input" class="form-label">Enter Prompt:</label>
+                <textarea id="prompt-input" class="form-control" rows="3" required placeholder="Enter your research prompt here..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Execute Self-evaluating Crew</button>
+        </form>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-12">
+        <div id="error-message" class="alert alert-danger mt-3" style="display: none;"></div>
+        <h2>Execution Results</h2>
+        <textarea id="execution-results" class="form-control" rows="10" readonly></textarea>
+        <div class="mt-3">
+            <button id="download-json" class="btn btn-secondary" disabled>Download JSON</button>
+            <button id="download-excel" class="btn btn-secondary" disabled>Download Excel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

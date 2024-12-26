@@ -1,0 +1,67 @@
+- Crew:
+    agents:
+    - Digital Infra Researcher
+    - Web Site Researcher
+    name: DC company research crew
+    tasks:
+    - identify portfolio company website
+    - research digital infra
+- Crew:
+    agents:
+    - Digital Infra Researcher
+    - Research Manager
+    - Web Site Researcher
+    name: DC research crew
+    tasks:
+    - research digital infra
+    - secondary investor research
+- Crew:
+    agents:
+    - Calculator
+    name: calc crew
+    tasks:
+    - Sum up 1 plus 2
+- Crew:
+    agents:
+    - Translator
+    name: foo
+    tasks:
+    - translation task
+- Crew:
+    agents:
+    - Prompt Engineer
+    name: Prompt Engineer Crew
+    tasks:
+    - prompt task
+- Crew:
+    agents:
+    - Research Analyst
+    name: Smart Researcher
+    tasks:
+    - smart research task
+- Crew:
+    agents:
+    - Research Reviewer
+    name: Research Reviewer
+    tasks:
+    - Review Research Task
+- Crew:
+    agents:
+    - ExcelDataResearcher
+    name: Excel Crew1
+    tasks:
+    - Internal Research
+- Crew:
+    agents:
+    - EV Researcher
+    name: EV Charger Locations
+    tasks:
+    - Research EV Chargers
+- Crew:
+    agents:
+    - Report Summarizer
+    - EV Researcher Checker
+    name: EV Research Checks
+    tasks:
+    - summarize research
+    - Check EV Charger Research

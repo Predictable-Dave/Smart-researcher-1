@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Inputs - Agent Management System{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<h1 class="mb-4">Manage Inputs</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Value</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, value in inputs.items() %}
+        <tr>
+            <td>{{ name }}</td>
+            <td>{{ value }}</td>
+            <td>
+                <button class="btn btn-sm btn-primary edit-input" data-name="{{ name }}" data-value="{{ value }}">Edit</button>
+                <form action="{{ url_for('manage_inputs') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="name" value="{{ name }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2 class="mt-4">Add/Edit Input</h2>
+<form action="{{ url_for('manage_inputs') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="add" id="form-action">
+    <div class="mb-3">
+        <label for="name" class="form-label">Name:</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="value" class="form-label">Value:</label>
+        <input type="text" class="form-control" id="value" name="value" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<script>
+    document.querySelectorAll('.edit-input').forEach(button => {
+        button.addEventListener('click', function() {
+            const name = this.dataset.name;
+            const value = this.dataset.value;
+            document.getElementById('form-action').value = 'edit';
+            document.getElementById('name').value = name;
+            document.getElementById('value').value = value;
+        });
+    });
+</script>
+{% endblock %}

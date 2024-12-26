@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance - Agent Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">System Maintenance</h1>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Temp Files</h2>
+                </div>
+                <div class="card-body">
+                    <p>Files in temp directory: <span class="badge bg-primary">{{ temp_files|length }}</span></p>
+                    <form method="POST" action="{{ url_for('maintenance') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="clear_temp">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to clear all temporary files?')">
+                            Clear Temp Files
+                        </button>
+                    </form>
+                    <div class="mt-3">
+                        <h6>Current Files:</h6>
+                        <ul class="list-group">
+                            {% for file in temp_files %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ file.name }}
+                                <small>{{ file.date }}</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Log Files</h2>
+                </div>
+                <div class="card-body">
+                    <p>Files in logs directory: <span class="badge bg-primary">{{ log_files|length }}</span></p>
+                    <form method="POST" action="{{ url_for('maintenance') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="clear_logs">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to clear all log files?')">
+                            Clear Log Files
+                        </button>
+                    </form>
+                    <div class="mt-3">
+                        <h6>Current Files:</h6>
+                        <ul class="list-group">
+                            {% for file in log_files %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ file.name }}
+                                <small>{{ file.date }}</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Cache Files</h2>
+                </div>
+                <div class="card-body">
+                    <p>Files in cache directory: <span class="badge bg-primary">{{ cache_files|length }}</span></p>
+                    <form method="POST" action="{{ url_for('maintenance') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="clear_cache_dbs">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all cache files? This action cannot be undone.')">
+                            Clear Cache Files
+                        </button>
+                    </form>
+                    <div class="mt-3">
+                        <h6>Current Files:</h6>
+                        <ul class="list-group">
+                            {% for file in cache_files %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ file.name }}
+                                <span class="badge bg-secondary">{{ file.size }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Vector Database Query</h2>
+                </div>
+                <div class="card-body">
+                    <form id="vector-query-form" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="query_vector_db">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="vector_query" id="vector-query" placeholder="Enter your query..." required>
+                            <button class="btn btn-primary" type="submit">Execute Query</button>
+                        </div>
+                    </form>
+                    <div id="query-error" class="alert alert-danger mt-2" style="display: none;"></div>
+                    <div class="table-responsive" id="vector-results" style="display: none;">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Document ID</th>
+                                    <th>Distance</th>
+                                    <th>Document</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vector-results-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Cached Results</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Query</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in cached_results %}
+                                <tr>
+                                    <td>{{ result.id }}</td>
+                                    <td>{{ result.query }}</td>
+                                    <td><pre class="mb-0"><code>{{ result.result }}</code></pre></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const vectorQueryForm = document.getElementById('vector-query-form');
+    const vectorResults = document.getElementById('vector-results');
+    const vectorResultsBody = document.getElementById('vector-results-body');
+    const queryError = document.getElementById('query-error');
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    vectorQueryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        // Clear previous results and errors
+        queryError.style.display = 'none';
+        vectorResults.style.display = 'none';
+        vectorResultsBody.innerHTML = '';
+
+        fetch('/maintenance', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-Token': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                queryError.textContent = data.error;
+                queryError.style.display = 'block';
+                return;
+            }
+
+            // Display results
+            const results = data;
+            vectorResultsBody.innerHTML = '';
+
+            for (let i = 0; i < Math.min(5, results.ids.length); i++) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${results.ids[i]}</td>
+                    <td>${results.distances[i].toFixed(4)}</td>
+                    <td>${results.documents[i]}</td>
+                `;
+                vectorResultsBody.appendChild(row);
+            }
+
+            vectorResults.style.display = 'block';
+        })
+        .catch(error => {
+            queryError.textContent = 'An error occurred while processing your query.';
+            queryError.style.display = 'block';
+            console.error('Error:', error);
+        });
+    });
+});
+</script>
+
+{% endblock %}
+

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Research Configuration - Agent Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Research Configuration Management</h1>
+
+    <!-- Smart Research Configurations Table Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Smart Research Configurations</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Prompt Engineer Crew</th>
+                                    <th>Research Crew</th>
+                                    <th>Review Crew</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in smart_research_configs %}
+                                <tr>
+                                    <td>{{ config.name }}</td>
+                                    <td>
+                                        <div>{{ config.prompt_engineer_crew }}</div>
+                                        <div class="crew-description small text-white mt-1 bg-dark p-2 rounded" data-crew="{{ config.prompt_engineer_crew }}"></div>
+                                    </td>
+                                    <td>
+                                        <div>{{ config.research_crew }}</div>
+                                        <div class="crew-description small text-white mt-1 bg-dark p-2 rounded" data-crew="{{ config.research_crew }}"></div>
+                                    </td>
+                                    <td>
+                                        <div>{{ config.research_review_crew }}</div>
+                                        <div class="crew-description small text-white mt-1 bg-dark p-2 rounded" data-crew="{{ config.research_review_crew }}"></div>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary edit-config" data-config='{{ config|tojson|safe }}'>
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <form action="{{ url_for('research_config') }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                            <input type="hidden" name="action" value="delete_config">
+                                            <input type="hidden" name="config_name" value="{{ config.name }}">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Configuration Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Add/Edit Configuration</h2>
+                </div>
+                <div class="card-body">
+                    <form id="smart-research-form" method="POST" action="{{ url_for('research_config') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="action" value="add_config" id="form-action">
+                        
+                        <div class="mb-3">
+                            <label for="config_name" class="form-label">Configuration Name</label>
+                            <input type="text" class="form-control" id="config_name" name="config_name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="prompt_engineer_crew" class="form-label">Prompt Engineer Crew</label>
+                            <select class="form-select" id="prompt_engineer_crew" name="prompt_engineer_crew" required>
+                                <option value="">Select a crew...</option>
+                                {% for crew in crews %}
+                                <option value="{{ crew.Crew.name }}">{{ crew.Crew.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="prompt_engineer_crew_desc" class="form-text mt-2 crew-description bg-dark text-white p-2 rounded"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="research_crew" class="form-label">Research Crew</label>
+                            <select class="form-select" id="research_crew" name="research_crew" required>
+                                <option value="">Select a crew...</option>
+                                {% for crew in crews %}
+                                <option value="{{ crew.Crew.name }}">{{ crew.Crew.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="research_crew_desc" class="form-text mt-2 crew-description bg-dark text-white p-2 rounded"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="research_review_crew" class="form-label">Research Review Crew</label>
+                            <select class="form-select" id="research_review_crew" name="research_review_crew" required>
+                                <option value="">Select a crew...</option>
+                                {% for crew in crews %}
+                                <option value="{{ crew.Crew.name }}">{{ crew.Crew.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="research_review_crew_desc" class="form-text mt-2 crew-description bg-dark text-white p-2 rounded"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Save Configuration</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Make crews and tasks available to main.js
+    window.crews = {{ crews|tojson|safe }};
+    window.tasks = {{ tasks|tojson|safe }};
+</script>
+{% endblock %}

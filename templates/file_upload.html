@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}File Upload - Agent Management System{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">File Upload Management</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Upload New File</h2>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('manage_files') }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select File (Excel or PDF)</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls,.pdf" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload File</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Processed Files</h2>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Type</th>
+                                <th>Processed Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in processed_files %}
+                            <tr>
+                                <td>{{ file.name }}</td>
+                                <td>{{ file.type }}</td>
+                                <td>{{ file.processed_date }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not processed_files %}
+                <p class="text-muted">No processed files found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Pending Files</h2>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Type</th>
+                                <th>Upload Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in pending_files %}
+                            <tr>
+                                <td>{{ file.name }}</td>
+                                <td>{{ file.type }}</td>
+                                <td>{{ file.upload_date }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not pending_files %}
+                <p class="text-muted">No pending files found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

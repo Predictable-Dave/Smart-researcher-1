@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Tasks - Agent Management System{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Manage Tasks</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Agent</th>
+            <th>Tools</th>
+            <th>Task Output Format</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <tr>
+            <td>{{ task.Task.name }}</td>
+            <td>{{ task.Task.agent }}</td>
+            <td>{{ task.Task.tools|default([], true)|join(', ') }}</td>
+            <td>
+                {% for class_name, class_info in pydantic_classes.items() %}
+                    {% if task.Task.pydantic_class == class_info.path %}
+                        {{ class_name }}
+                    {% endif %}
+                {% endfor %}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary edit-task" data-index="{{ loop.index0 }}" data-task='{{ task.Task|tojson|safe }}'>Edit</button>
+                <form action="{{ url_for('manage_tasks') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="index" value="{{ loop.index0 }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2 class="mt-4">Add/Edit Task</h2>
+<form action="{{ url_for('manage_tasks') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="add" id="form-action">
+    <input type="hidden" name="index" value="" id="form-index">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name:</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description:</label>
+                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="expected_output" class="form-label">Expected Output:</label>
+                <textarea class="form-control" id="expected_output" name="expected_output" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="pydantic_class" class="form-label">Task Output Format:</label>
+                <select class="form-select" id="pydantic_class" name="pydantic_class">
+                    <option value="">None</option>
+                    {% for class_name, class_info in pydantic_classes.items() %}
+                    <option value="{{ class_info.path }}"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="right"
+                            data-bs-html="true"
+                            title="{{ class_info.description }}"
+                            {% if task and task.Task.pydantic_class == class_info.path %}selected{% endif %}>
+                        {{ class_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted">
+                    Select a Pydantic class to validate and structure the task output.
+                    Hover over options to see descriptions.
+                </small>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="agent" class="form-label">Agent:</label>
+                <select class="form-select" id="agent" name="agent" required>
+                    <option value="">Choose an agent...</option>
+                    {% for agent in agents %}
+                    <option value="{{ agent.Agent.name }}">{{ agent.Agent.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="delegate" class="form-label">Delegate:</label>
+                <select class="form-select" id="delegate" name="delegate" required>
+                    <option value="True">True</option>
+                    <option value="False">False</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="tools" class="form-label">Tools:</label>
+                <select class="form-select" id="tools" name="tools" multiple>
+                    {% for tool_name in tools %}
+                    <option value="{{ tool_name }}">{{ tool_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<script>
+    var tasksJson = {{ tasks_json|safe }};
+    document.querySelectorAll('.edit-task').forEach(button => {
+        button.addEventListener('click', function() {
+            const taskData = JSON.parse(this.dataset.task);
+            document.getElementById('form-action').value = 'edit';
+            document.getElementById('form-index').value = this.dataset.index;
+            document.getElementById('name').value = taskData.name;
+            document.getElementById('description').value = taskData.description;
+            document.getElementById('expected_output').value = taskData.expected_output;
+            // Set agent value
+            const agentSelect = document.getElementById('agent');
+            if (taskData.agent) {
+                agentSelect.value = taskData.agent;
+            }
+            
+            // Set pydantic class value with improved handling
+            const pydanticSelect = document.getElementById('pydantic_class');
+            if (taskData.pydantic_class && taskData.pydantic_class.trim() !== '') {
+                const classPath = taskData.pydantic_class.trim();
+                Array.from(pydanticSelect.options).forEach(option => {
+                    option.selected = option.value === classPath;
+                    if (option.selected) {
+                        pydanticSelect.dataset.currentValue = classPath;
+                    }
+                });
+            } else {
+                pydanticSelect.value = '';
+                pydanticSelect.dataset.currentValue = '';
+            }
+            // Trigger change event to update any dependent elements
+            pydanticSelect.dispatchEvent(new Event('change'));
+            
+            // Set delegate value
+            const delegateSelect = document.getElementById('delegate');
+            if (typeof taskData.delegate === 'boolean') {
+                delegateSelect.value = taskData.delegate ? 'True' : 'False';
+            }
+            
+            // Set tools values
+            const toolsSelect = document.getElementById('tools');
+            Array.from(toolsSelect.options).forEach(option => {
+                option.selected = taskData.tools && taskData.tools.includes(option.value);
+            });
+        });
+    });
+
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            container: 'body',
+            trigger: 'hover'
+        });
+    });
+</script>
+{% endblock %}

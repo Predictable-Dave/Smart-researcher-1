@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Crews - Agent Management System{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Manage Crews</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Agents</th>
+            <th>Tasks</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for crew in crews %}
+        <tr>
+            <td>{{ crew.Crew.name }}</td>
+            <td>{{ crew.Crew.agents|join(', ') }}</td>
+            <td>{{ crew.Crew.tasks|join(', ') }}</td>
+            <td>
+                <button class="btn btn-sm btn-primary edit-crew" data-index="{{ loop.index0 }}" data-crew='{{ crew.Crew|tojson|safe }}'>Edit</button>
+                <form action="{{ url_for('manage_crews') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="index" value="{{ loop.index0 }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2 class="mt-4">Add/Edit Crew</h2>
+<form action="{{ url_for('manage_crews') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="add" id="form-action">
+    <input type="hidden" name="index" value="" id="form-index">
+    <div class="mb-3">
+        <label for="name" class="form-label">Name:</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="agents" class="form-label">Agents:</label>
+        <select class="form-select" id="agents" name="agents" multiple required>
+            {% for agent in agents %}
+            <option value="{{ agent.Agent.name }}">{{ agent.Agent.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="tasks" class="form-label">Tasks:</label>
+        <select class="form-select" id="tasks" name="tasks" multiple required>
+            {% for task in tasks %}
+            <option value="{{ task.Task.name }}">{{ task.Task.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<script>
+    var agentsJson = {{ agents_json|safe }};
+    var tasksJson = {{ tasks_json|safe }};
+    
+    document.querySelectorAll('.edit-crew').forEach(button => {
+        button.addEventListener('click', function() {
+            const crewData = JSON.parse(this.dataset.crew);
+            document.getElementById('form-action').value = 'edit';
+            document.getElementById('form-index').value = this.dataset.index;
+            document.getElementById('name').value = crewData.name;
+            
+            const agentsSelect = document.getElementById('agents');
+            Array.from(agentsSelect.options).forEach(option => {
+                option.selected = crewData.agents && crewData.agents.includes(option.value);
+            });
+            
+            const tasksSelect = document.getElementById('tasks');
+            Array.from(tasksSelect.options).forEach(option => {
+                option.selected = crewData.tasks && crewData.tasks.includes(option.value);
+            });
+        });
+    });
+</script>
+{% endblock %}
