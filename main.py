@@ -1,9 +1,10 @@
 from flask import Flask
 import logging
 import os
-from routes import register_routes
-from app_state import AppState
 from flask_wtf.csrf import CSRFProtect, CSRFError
+from app_state import AppState
+from routes import register_routes
+print("Hello World")
 
 # Configure enhanced logging
 os.makedirs('logs', exist_ok=True)
@@ -18,7 +19,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def create_app():
-    
     try:
         # Create Flask app
         logger.info("Creating Flask application...")
