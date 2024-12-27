@@ -4,15 +4,15 @@ import logging
 import json
 import pandas as pd
 from datetime import datetime
+from datetime import datetime
+from result_formatter import result_formatter
 
 # Import required packages with error handling
 try:
     import pandas as pd
 except ImportError:
     pd = None  # Handle case where pandas is not available
-from datetime import datetime
 
-from result_formatter import result_formatter
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

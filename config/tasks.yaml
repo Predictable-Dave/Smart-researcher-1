@@ -10,19 +10,9 @@
     pydantic_class: self_eval_crew.EngineeredPrompt
     tools: []
 - Task:
-    agent: Web Site Researcher
-    delegate: false
-    delgate: false
-    description: "find digital bridge's website.\r\n"
-    expected_output: "a url for digital bridge's website nothing else\r\n"
-    name: identify portfolio company website
-    output_file: infra_research_task.txt
-    tools:
-    - Search Internet
-- Task:
     agent: Digital Infra Researcher
     delgate: true
-    description: "Research {industry} for which {Digital Infra Provider} has developed,\
+    description: "Research {industry} for which {company} has developed,\
       \ built or invested in within APAC, \nfor each investment identify precisely\
       \ all the parties who have co-invested and what the investment\nstructure is.\
       \  Identifying secondary investors by generic terms such as local investor is\
@@ -30,7 +20,7 @@
       \ referencing the data centre location.\nWhen more that one data center exists\
       \ in a country identify the location in terms of city and suburb\n"
     expected_output: "a list of {industry} locations by subrub, city and country.\
-      \  For each location, include power in MW and\nwho are the shareholders in the\
+      \  For each location, include power in {key metric} and\nwho are the shareholders in the\
       \ asset. The format of the output to be a well-organized table format using\
       \ JSON. \nIdentify the main entities, attributes and use them as keys in the\
       \ JSON object. Then, extract the relevant \ninformation from the text and populate\
@@ -45,10 +35,9 @@
     - Search Internet
     - Search News
 - Task:
-    agent: Digital Infra Researcher
+    agent: Digital Researcher
     delgate: true
-    description: 'For all of the secondary investors identfied in the ''research digital
-      infra'' task, research where
+    description: 'For all of the secondary investors identfied in the previous tasks, research where
 
       other {industry} locations in APAC where that secondary investor has invested
 
@@ -69,7 +58,7 @@
     - Search News
 - Task:
     agent: Research Manager
-    description: "monitor the tasks of the Digital Infra Researcher and Web Site Reseacher\
+    description: "monitor the tasks of the Digital Researcher and Web Site Reseacher\
       \ to ensure accuracy and that \nresults are delivered in a timely manner.\n"
     expected_output: accurate results including secondary investors described in specific
       terms in a timely fashion.
@@ -90,22 +79,22 @@
       investments {language}
 
       '
-    expected_output: 'a list of cities and suburbs where data centres are being built
+    expected_output: 'a list of cities and suburbs where {industry} are being built
       or expanded
 
       '
-    name: find Data Centre investment announcements
+    name: find investment announcements
     output_file: company_research_task.txt
     tools:
     - Search News
 - Task:
     agent: News Researcher
     delegate: true
-    description: "For the data centres, towns and secondary investors by the Digital\
-      \ Infra Researcher, search for and in news articles between in {area}, {country}\
-      \ \nbetween {start_date} and {end_date}. \nBased on the news articles found\
-      \ work with the Internet Researcher for additional details, work with Fact Checker\
-      \ to ensure accuracy and relevance of research\n"
+    description: "For the data centres, towns and secondary investors by the {industry}, search for 
+      and in news articles between in {area}, {country}
+      between {start_date} and {end_date}.Based on the news articles found
+      work with the Internet Researcher for additional details, work with Fact Checker
+      to ensure accuracy and relevance of research\n"
     expected_output: list of news articles with data centre location and investors
       as bullet points
     name: news research task
@@ -116,8 +105,8 @@
 - Task:
     agent: Corporate Researcher
     delgate: true
-    description: 'For the secondary investors found by the Digital Infra Strcuture,
-      look for articles on their web sites which refer to fibre deployments in {area},{country}
+    description: 'For the secondary investors found by previous tasks,
+      look for articles on their web sites which refer to {industry} deployments in {area},{country}
 
       between {start_date} and {end_date}, work with Fact Checker to ensure accuracy
       and relevance of research
@@ -133,8 +122,8 @@
 - Task:
     agent: Fact checker
     delegate: true
-    description: "Fact check the information provided by the Digital Infra Researcher\
-      \ and Web Researcher to ensure relevance for data centres in APAC\r\n"
+    description: "Fact check the information provided by Corporate Researcher\
+      \ and Web Researcher to ensure relevance for {industry} in {region}\r\n"
     expected_output: relevant news articles summarised as a list
     name: fact checker
     pydantic_class: ''
@@ -167,21 +156,11 @@
 - Task:
     agent: Calculator
     delegate: false
-    description: add 1 plus 2 and then times 3
+    description: "calculat values based on the output from tasks"
     expected_output: 'a json with the result '
-    name: Sum up 1 plus 2
+    name: calculate
     pydantic_class: ''
     tools: []
-- Task:
-    agent: ExcelDataResearcher
-    delegate: false
-    description: Use any tool available to retrieve the capital city of Thailand
-    expected_output: 'a json with the result '
-    name: Internal Research
-    pydantic_class: ''
-    tools:
-    - Excel RAG
-    - Dummy Tool
 - Task:
     agent: Prompt Engineer
     delegate: false
@@ -204,23 +183,23 @@
 - Task:
     agent: Research Analyst
     delegate: true
-    description: 'Review: {research} and confirm if at least 50 locations of data
-      centers have been identified in Australia and must include the location of data
-      centres in Japan and South Korea if does not include the locations including
-      Japanese cities the research is not good'
+    description: 'Review: {research} and confirm if the total number of {metric} identified is with 10% to the total metric provided by the trusted source provided for {industry}.  If the variance is greater the research is not valid.  If the error is constistenly greater than 10% then flag this as an issue.  If not propose how to change the {research} result to be more granualar and matched against the detail of the trusted source.' 
     expected_output: Confirmation in the analysis is valid and feedback on why the
       analysis is complete or not
     name: Review Research Task
     pydantic_class: self_eval_crew.AnalysisReviewState
     tools:
+    - Smart Excel RAG
+    - Calculator
     - Search Internet
+    
 - Task:
     agent: EV Researcher Checker
     delegate: true
-    description: List all regions and total ev charging points
+    description: List all regions and total ev charging points and calculate totals
     expected_output: Total number of EV points
     name: Check EV Charger Research
     pydantic_class: ''
     tools:
-    - Calculator
     - Smart Excel RAG
+    - Calculator

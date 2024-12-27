@@ -1,27 +1,34 @@
-import os
 import json
-import shutil
 import logging
-from llama_parse import LlamaParse, ResultType
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_core.prompts import ChatPromptTemplate
+import os
+import shutil
+
+import chromadb
+import faiss
+from crewai.tools import tool
+from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from llama_index.core import StorageContext
+from llama_index.core.indices import load_index_from_storage
 from llama_index.core.indices.vector_store.base import VectorStoreIndex
 from llama_index.core.node_parser import MarkdownElementNodeParser
-from llama_index.core.indices import load_index_from_storage
-from pydantic.v1 import NoneBytes
-from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.core import StorageContext
 from llama_index.llms.openai import OpenAI
-from langchain_community.vectorstores import FAISS
-import faiss
-from langchain_community.docstore.in_memory import InMemoryDocstore
-from langchain.chains import ConversationalRetrievalChain
-import chromadb
-from crewai.tools import tool
+from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_parse import LlamaParse, ResultType
+from pydantic.v1 import NoneBytes
 
-from db_utils import db_path, get_next_id, store_result, get_result_by_id,similarity_threshold
+from db_utils import (
+  db_path,
+  get_next_id,
+  get_result_by_id,
+  similarity_threshold,
+  store_result,
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -234,6 +241,7 @@ class ExcelRagTool:
         logger.info(f"Executing Excel RAG query: {query}")
         tag = "ExcelRAG"
         cache_query = f'{tag}:{query}'
+        persist_dir = "./cache/excel_storage"
         
         try:
             cache=chroma_client = chromadb.PersistentClient(path=db_path)
@@ -264,7 +272,7 @@ class ExcelRagTool:
         llamaparse_api_key=os.getenv('LLAMAPARSE_API_KEY', 'dev-key-please-change')
         excel_files = [os.path.join(directory_path,filename) for filename in os.listdir(directory_path) if filename.endswith('.xlsx')]
         logger.debug(f"Excel files found: {excel_files}")
-        chroma_client = chromadb.PersistentClient("./cache/chroma_db")
+        chroma_client = chromadb.PersistentClient("./cache/excel_chroma_db")
         chroma_collection = chroma_client.get_or_create_collection(name=collection_name)
         parser_instruction=f"You are parsing an analyst report {backstory}. Extract information about {context} per geographic region"
         logger.info(f"processing with{parser_instruction}")
@@ -274,7 +282,6 @@ class ExcelRagTool:
           result_type=ResultType.MD
         )
         node_parser = MarkdownElementNodeParser(llm=llm, num_workers=4)
-        persist_dir = "./excel_storage"
         if os.path.exists(os.path.join(persist_dir, "docstore.json")) and len(excel_files)>0:
            logger.info("Loading existing vector store")
            vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
@@ -297,8 +304,9 @@ class ExcelRagTool:
                 recursive_index = VectorStoreIndex(nodes=base_nodes + objects, llm=llm,storage_context=storage_context)
                 recursive_index.storage_context.persist(persist_dir=persist_dir)
                 for excel_file in excel_files:
-                    filepath = os.path.join(directory, excel_file)
-                    shutil.move(filepath, processed_path)
+                    processed_filepath = os.path.join(processed_path, excel_file)
+                    logger.info(f"Processing file: {excel_file}")
+                    shutil.move(excel_file, processed_filepath)
            else:
             return "No excel files found"
     

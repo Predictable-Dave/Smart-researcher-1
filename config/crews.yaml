@@ -1,26 +1,9 @@
 - Crew:
     agents:
-    - Digital Infra Researcher
-    - Web Site Researcher
-    name: DC company research crew
-    tasks:
-    - identify portfolio company website
-    - research digital infra
-- Crew:
-    agents:
-    - Digital Infra Researcher
-    - Research Manager
-    - Web Site Researcher
-    name: DC research crew
-    tasks:
-    - research digital infra
-    - secondary investor research
-- Crew:
-    agents:
     - Calculator
     name: calc crew
     tasks:
-    - Sum up 1 plus 2
+    - calculate
 - Crew:
     agents:
     - Translator
@@ -47,10 +30,10 @@
     - Review Research Task
 - Crew:
     agents:
-    - ExcelDataResearcher
+    - Internet Researcher
     name: Excel Crew1
     tasks:
-    - Internal Research
+    - research digital infra
 - Crew:
     agents:
     - EV Researcher

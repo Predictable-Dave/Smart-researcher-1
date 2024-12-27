@@ -1,9 +1,12 @@
 {
-  "Digital Infra Provider": "Digital Bridge",
+  "industry": "IOT",
+  "Company": "Thales",
+  "Region": "Europe",
   "start_date": "January 2021",
-  "language": "Japanese",
-  "industry": "Data Centres",
-  "country": "Australia",
+  "language": "Portuguese",
+  "country": "Portugal",
   "end_date": "January 2029",
-  "area": "Sydney"
+  "area": "Algarve",
+  "key metric": "connections",
+  "units": "thousands",
 }

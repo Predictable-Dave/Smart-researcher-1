@@ -4,11 +4,19 @@ import json
 import os
 from typing import Optional, Dict, Any, List
 from crewai import Crew
-from collections.abc import Iterable
+#from collections.abc import Iterable
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler('logs/crew_manager.log')
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+
 
 class CrewManager:
     def __init__(self, agent_manager, task_manager):
-        self.logger = logging.getLogger(__name__)
+        #self.logger = logging.getLogger(__name__)
         self.agent_manager = agent_manager
         self.task_manager = task_manager
         self.last_execution_results = {}
@@ -23,7 +31,7 @@ class CrewManager:
                 yaml.dump([], f)
             self.crews = []
         except Exception as e:
-            self.logger.error(f"Error loading crews: {str(e)}")
+            logger.error(f"Error loading crews: {str(e)}")
             self.crews = []
 
     def process_json_output(self, raw_output: Any) -> Dict[str, Any]:
@@ -36,7 +44,7 @@ class CrewManager:
             if isinstance(raw_output, str):
                 # Check if it's HTML content
                 if raw_output.strip().startswith('<!DOCTYPE') or raw_output.strip().startswith('<html'):
-                    self.logger.error("Received HTML content instead of JSON")
+                    logger.error("Received HTML content instead of JSON")
                     return {'error': 'Invalid response format received'}
 
                 # Remove markdown code blocks if present
@@ -53,7 +61,7 @@ class CrewManager:
             # For any other type, wrap it in a dict
             return {'data': str(raw_output)}
         except Exception as e:
-            self.logger.error(f"Error processing JSON output: {str(e)}")
+            logger.error(f"Error processing JSON output: {str(e)}")
             return {'error': f'Failed to process output: {str(e)}'}
 
     def execute_crew(self, crew_name: str) -> Dict[str, Any]:
@@ -82,30 +90,31 @@ class CrewManager:
             if result.json_dict:
                 return {'result':result.json_dict}
             if result.pydantic:
-                return {'result':result.pydantic}
+                logger.debug(f"pydantic result: {result.pydantic}")
+                return {'result':result.pydantic.result}
             return {'result': result.raw}
             
         except Exception as e:
-            self.logger.error(f'Error executing crew {crew_name}: {str(e)}')
+            logger.error(f'Error executing crew {crew_name}: {str(e)}')
             return {'error': str(e)}
 
     def create_crewai_crew(self, crew_name: str) -> Optional[Crew]:
         # Check cache first
         if crew_name in self.crew_cache:
-            self.logger.debug(f"Returning cached crew for {crew_name}")
+            logger.debug(f"Returning cached crew for {crew_name}")
             return self.crew_cache[crew_name]
 
-        self.logger.debug(f"Creating crew with name: {crew_name}")
+        logger.debug(f"Creating crew with name: {crew_name}")
         crew_data = self.get_crewai_crew_by_name(crew_name)
         if crew_data:
-            self.logger.debug(f"Found crew data: {crew_data}")
+            logger.debug(f"Found crew data: {crew_data}")
             
             # Create agents with proper error handling and type checking
             agents = []
             for agent_name in crew_data['agents']:
                 agent = self.agent_manager.create_crewai_agent(agent_name)
                 if agent is None:
-                    self.logger.error(f"Failed to create agent {agent_name} for crew {crew_name}")
+                    logger.error(f"Failed to create agent {agent_name} for crew {crew_name}")
                     continue
                 agents.append(agent)
             
@@ -114,16 +123,16 @@ class CrewManager:
             for task_name in crew_data['tasks']:
                 task = self.task_manager.create_crewai_task(task_name)
                 if task is None:
-                    self.logger.error(f"Failed to create task {task_name} for crew {crew_name}")
+                    logger.error(f"Failed to create task {task_name} for crew {crew_name}")
                     continue
                 tasks.append(task)
             
             if not agents:
-                self.logger.error(f"No valid agents created for crew {crew_name}")
+                logger.error(f"No valid agents created for crew {crew_name}")
                 return None
                 
             if not tasks:
-                self.logger.error(f"No valid tasks created for crew {crew_name}")
+                logger.error(f"No valid tasks created for crew {crew_name}")
                 return None
                 
             try:
@@ -136,13 +145,13 @@ class CrewManager:
                 crew = Crew(**crew_kwargs)
                 # Store in cache
                 self.crew_cache[crew_name] = crew
-                self.logger.debug(f"Successfully created and cached crew object for {crew_name}")
+                logger.debug(f"Successfully created and cached crew object for {crew_name}")
                 return crew
             except Exception as e:
-                self.logger.error(f"Error creating crew object: {str(e)}")
+                logger.error(f"Error creating crew object: {str(e)}")
                 return None
         else:
-            self.logger.error(f"No crew data found for name: {crew_name}")
+            logger.error(f"No crew data found for name: {crew_name}")
             return None
 
     def get_crewai_crew_by_name(self, crew_name: str) -> Optional[Dict[str, Any]]:
@@ -151,14 +160,14 @@ class CrewManager:
             for crew in self.crews:
                 if crew and isinstance(crew, dict) and 'Crew' in crew:
                     if crew['Crew'].get('name') == crew_name:
-                        self.logger.info(f"Found crew configuration for: {crew_name}")
+                        logger.info(f"Found crew configuration for: {crew_name}")
                         return crew['Crew']
             
-            self.logger.error(f"No crew found with name: {crew_name}")
-            self.logger.debug(f"Available crews: {[c.get('Crew', {}).get('name') for c in self.crews if c]}")
+            logger.error(f"No crew found with name: {crew_name}")
+            logger.debug(f"Available crews: {[c.get('Crew', {}).get('name') for c in self.crews if c]}")
             return None
         except Exception as e:
-            self.logger.error(f"Error retrieving crew {crew_name}: {str(e)}")
+            logger.error(f"Error retrieving crew {crew_name}: {str(e)}")
             return None
 
     def create_crew(self, crew_data: Dict[str, Any]) -> bool:
@@ -166,7 +175,7 @@ class CrewManager:
             self.crews.append({'Crew': crew_data})
             return True
         except Exception as e:
-            self.logger.error(f"Error creating crew: {str(e)}")
+            logger.error(f"Error creating crew: {str(e)}")
             return False
 
     def update_crew(self, index: int, crew_data: Dict[str, Any]) -> bool:
@@ -180,7 +189,7 @@ class CrewManager:
                 self.crews[index]['Crew'] = crew_data
                 return True
             except Exception as e:
-                self.logger.error(f"Error updating crew: {str(e)}")
+                logger.error(f"Error updating crew: {str(e)}")
                 return False
         return False
 
@@ -195,6 +204,6 @@ class CrewManager:
                 del self.crews[index]
                 return True
             except Exception as e:
-                self.logger.error(f"Error deleting crew: {str(e)}")
+                logger.error(f"Error deleting crew: {str(e)}")
                 return False
         return False

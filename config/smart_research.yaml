@@ -3,13 +3,3 @@ configs:
   prompt_engineer_crew: Prompt Engineer Crew
   research_crew: Smart Researcher
   research_review_crew: Research Reviewer
-- name: Data Center Research
-  prompt_engineer_crew: DC research crew
-  research_crew: DC company research crew
-  research_review_crew: calc crew
-  type: self_supervised
-- name: test
-  prompt_engineer_crew: Prompt Engineer Crew
-  research_crew: Smart Researcher
-  research_review_crew: Research Reviewer1
-  type: self_supervised
