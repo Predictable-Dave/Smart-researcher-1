@@ -15,10 +15,11 @@ logger.addHandler(handler)
 
 
 class CrewManager:
-    def __init__(self, agent_manager, task_manager):
+    def __init__(self, agent_manager, task_manager, inputs):
         #self.logger = logging.getLogger(__name__)
         self.agent_manager = agent_manager
         self.task_manager = task_manager
+        self.inputs = inputs
         self.last_execution_results = {}
         self.crew_cache = {}
         
@@ -74,14 +75,9 @@ class CrewManager:
             if not crew:
                 return {'error': f'Could not create crew: {crew_name}'}
                 
-            # Get inputs if they exist
-            inputs = {}
-            if os.path.exists('config/inputs.json'):
-                with open('config/inputs.json', 'r') as f:
-                    inputs = json.load(f)
                     
             # Execute crew
-            result = crew.kickoff(inputs=inputs)
+            result = crew.kickoff(inputs=self.inputs)
             if not result:
                 return {'error': 'No result from crew execution'}
                 
@@ -91,7 +87,8 @@ class CrewManager:
                 return {'result':result.json_dict}
             if result.pydantic:
                 logger.debug(f"pydantic result: {result.pydantic}")
-                return {'result':result.pydantic.result}
+                return {'result':result.pydantic.results}
+            logger.debug(f"result: {result}")
             return {'result': result.raw}
             
         except Exception as e:

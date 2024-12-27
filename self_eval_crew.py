@@ -8,6 +8,7 @@ from logging.handlers import RotatingFileHandler
 import logging
 import os
 from typing import Optional, Dict, Any, List, TypedDict
+from app_state import AppState
 from file_manager import FileManager
 from agent_manager import AgentManager
 from task_manager import TaskManager
@@ -196,9 +197,10 @@ class SmartResearcher:
         return [crew['Crew']['name'] for crew in crews_data]
 
 class AnalysisResearchFlow(Flow[AnalysisReviewState]):
-    def __init__(self):
+    def __init__(self,inputs):
         super().__init__()
         self._state = AnalysisReviewState()
+        self.inputs = inputs if inputs else {}
         self.prompt_engineering_crew = None
         self.research_crew = None
         self.research_review_crew = None
@@ -238,10 +240,8 @@ class AnalysisResearchFlow(Flow[AnalysisReviewState]):
                 self.state.prompt_change_rationale = pydantic_result.prompt_change_rationale
         logger.info("get input values")
         # Get inputs if they exist
-        inputs = {}
-        if os.path.exists('config/inputs.json'):
-            with open('config/inputs.json', 'r') as f:
-                inputs = json.load(f)
+        inputs = self.inputs
+
         inputs['prompt']=self.state.prompt
         logger.debug(f"Inputs: {inputs} for research")
         self.state.counter += 1
@@ -304,9 +304,11 @@ class AnalysisResearchFlow(Flow[AnalysisReviewState]):
         return self.state.research if self.state.research else '{"result":"Research could not be completed"}'
 
 class self_eval_crew(SmartResearcher):
-    def __init__(self, config_name: Optional[str] = None):
+    def __init__(self, config_name: Optional[str] = None,
+                 app_state: Optional[AppState]=None):
         super().__init__(config_name)
-        self.flow = AnalysisResearchFlow()
+        self.inputs = app_state.inputs if app_state else {}
+        self.flow = AnalysisResearchFlow(self.inputs)
         self.flow.initialize_crews(self)
 
  
@@ -316,7 +318,7 @@ class self_eval_crew(SmartResearcher):
             logger.info(f"Running research for {prompt}")
             self.flow.state.prompt = prompt
             result= self.flow.kickoff()
-            #result=self.run_research_wrapper(prompt)
+
             logger.info(f'self eval result{result}')
 
             try:

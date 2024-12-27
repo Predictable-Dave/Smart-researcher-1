@@ -76,7 +76,7 @@ class AppState:
             raise
         # create cache database 
         set_up_db()
-        
+        self.inputs = self._load_data('inputs')
         try:
             # Initialize managers
             self.logger.debug("Initializing managers")
@@ -86,7 +86,8 @@ class AppState:
                 self.logger.debug("Initializing TaskManager")
                 self.task_manager = TaskManager(self.agent_manager)
                 self.logger.debug("Initializing CrewManager")
-                self.crew_manager = CrewManager(self.agent_manager, self.task_manager)
+                self.crew_manager = CrewManager(self.agent_manager, 
+                                                self.task_manager,self.inputs)
                 self.logger.debug("All managers initialized successfully")
             except Exception as e:
                 self.logger.error(f"Failed to initialize managers: {str(e)}", exc_info=True)
@@ -97,7 +98,7 @@ class AppState:
             self.agents = self._load_data('agents')
             self.tasks = self._load_data('tasks')
             self.crews = self._load_data('crews')
-            self.inputs = self._load_data('inputs')
+
             
             # Set up managers with loaded data
             self.logger.debug("Setting up managers with loaded data")

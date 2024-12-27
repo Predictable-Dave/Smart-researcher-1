@@ -39,7 +39,9 @@ def execute_crew_helper(app_state):
       logger.info(f"Attempting to execute crew: {crew_name}")
 
       from crew_manager import CrewManager
-      crew_manager = CrewManager(app_state.agent_manager, app_state.task_manager)
+      crew_manager = CrewManager(app_state.agent_manager, 
+                                 app_state.task_manager, 
+                                 app_state.inputs)
       logger.debug(f"Available crews: {[c.get('Crew', {}).get('name') for c in crew_manager.crews if c]}")
 
       result = crew_manager.execute_crew(crew_name)
@@ -110,7 +112,7 @@ def execute_self_eval_crew_helper(app_state):
 
         # Initialize self-evaluating crew with the selected configuration
         from self_eval_crew import self_eval_crew
-        researcher = self_eval_crew(crew_name)
+        researcher = self_eval_crew(crew_name,app_state)
 
         # Execute research
         result = researcher.run_research(prompt)
