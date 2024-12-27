@@ -242,9 +242,7 @@ class AnalysisResearchFlow(Flow[AnalysisReviewState]):
         if os.path.exists('config/inputs.json'):
             with open('config/inputs.json', 'r') as f:
                 inputs = json.load(f)
-    
-        logger.info("read input json")
-        inputs["prompt"]=self.state.prompt
+        inputs['prompt']=self.state.prompt
         logger.debug(f"Inputs: {inputs} for research")
         self.state.counter += 1
         try:
