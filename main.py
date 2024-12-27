@@ -1,10 +1,10 @@
+
 from flask import Flask
 import logging
 import os
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from app_state import AppState
 from routes import register_routes
-print("Hello World")
 
 # Configure enhanced logging
 os.makedirs('logs', exist_ok=True)
@@ -18,7 +18,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Global app and app_state variables
+app = None
+app_state = None
+
 def create_app():
+    global app, app_state
     try:
         # Create Flask app
         logger.info("Creating Flask application...")
@@ -66,28 +71,19 @@ def create_app():
         logger.error(f"Failed to create application: {str(e)}", exc_info=True)
         raise
 
-if __name__ == '__main__':
+# Create the app on module import
+app, app_state = create_app()
 
+if __name__ == '__main__':
     try:
         # Initialize required modules
         import sys
         import traceback
         
-        logger.info("Starting Flask server initialization...")
-        try:
-            app, app_state = create_app()
-            logger.info("Flask server initialization complete, starting server...")
-            logger.info("Starting Flask server on port 5000...")
-            logger.debug("Flask app configuration: %s", app.config)
-            app.run(host='0.0.0.0', port=5000, debug=True)
-        except ImportError as ie:
-            logger.critical(f"Missing required module: {str(ie)}")
-            traceback.print_exc()
-            sys.exit(1)
-        except Exception as e:
-            logger.critical(f"Failed to start Flask server: {str(e)}")
-            logger.critical(f"Stack trace: {traceback.format_exc()}")
-            sys.exit(1)
+        logger.info("Starting Flask server...")
+        logger.info("Starting Flask server on port 5000...")
+        logger.debug("Flask app configuration: %s", app.config)
+        app.run(host='0.0.0.0', port=5000, debug=True)
     except Exception as e:
         logger.critical(f"Critical error in main: {str(e)}")
         traceback.print_exc()
